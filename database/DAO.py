@@ -42,33 +42,21 @@ class DAO():
     def getAllEges(annoMax,annoMin,idMap):
         cnx = DBConnect.get_connection()
         cursor = cnx.cursor(dictionary=True)
-        query = """select a1.circuitId as circuito1, a2.circuitId as circuito2, tb1.n + tb2.n as peso
-    from (select distinct c.circuitId 
-          from circuits c, races r 
-          where c.circuitId = r.circuitId and r.year < %s and r.year > %s
-          ) as a1,
-         (select distinct c.circuitId 
-          from circuits c, races r 
-          where c.circuitId = r.circuitId and r.year < %s and r.year > %s
-          ) as a2,
-         (select r2.circuitId, count(*) as n
-          from results r, races r2 
-          where r2.raceId = r.raceId 
-          and r.time != '\\\\N'
-          and r2.year < %s and r2.year > %s
-          group by r2.circuitId) as tb1,
-         (select r2.circuitId, count(*) as n
-          from results r, races r2 
-          where r2.raceId = r.raceId 
-          and r.time != '\\\\N'
-          and r2.year < %s and r2.year > %s
-          group by r2.circuitId) as tb2
-    where a1.circuitId > a2.circuitId 
-      and a1.circuitId = tb1.circuitId 
-      and a2.circuitId = tb2.circuitId 
-             
-                     """
-        cursor.execute(query,(annoMax,annoMin,annoMax,annoMin,annoMax,annoMin,annoMax,annoMin))
+        query = """
+             select distinct a1.circuitId  as circuito1, a2.circuitId as circuito2,a1.n+a2.n as peso
+            from (select distinct r.circuitId , count(*) as n
+            from races r ,results r2 
+            where r.`year` BETWEEN %s and %s and r2.raceId = r.raceId 
+            and r.`time` is not NULL 
+            group by r.circuitId ) as a1,
+            (select distinct r.circuitId , count(*) as n
+            from races r ,results r2 
+            where r.`year` BETWEEN %s and %s and r2.raceId = r.raceId 
+            and r.`time` is not NULL 
+            group by r.circuitId) as a2
+            where  a1.circuitId < a2.circuitId 
+                                 """
+        cursor.execute(query,(annoMin,annoMax,annoMin,annoMax,))
 
         res = []
         for row in cursor:
